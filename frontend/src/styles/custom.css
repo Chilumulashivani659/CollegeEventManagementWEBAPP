@@ -81,3 +81,35 @@ body {
 .modal {
   z-index: 1055;
 }
+
+/* Home page role sections */
+.hero-panel {
+  background-color: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(2px);
+}
+
+.coordinator-card {
+  border-left: 5px solid var(--primary);
+}
+
+.student-card {
+  border-left: 5px solid #0dcaf0;
+}
+
+.section-kicker {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* Navbar logout rendered as a button but styled like a link */
+.navbar .btn-link.nav-link {
+  text-decoration: none;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+

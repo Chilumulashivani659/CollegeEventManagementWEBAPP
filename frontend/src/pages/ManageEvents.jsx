@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   getEvents,
   getEvent,
@@ -7,6 +7,7 @@ import {
   updateEvent,
   deleteEvent
 } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { formatDate, toDateInputValue } from '../utils/formatDate';
 
 const MAX_LENGTH = 150;
@@ -27,6 +28,8 @@ const todayString = () => {
 
 const ManageEvents = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { coordinator, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [events, setEvents] = useState([]);
   const [search, setSearch] = useState('');
@@ -55,6 +58,27 @@ const ManageEvents = () => {
 
   const refresh = () => setRefreshKey((key) => key + 1);
 
+  // If the token expires or approval is revoked, clear the session and return
+  // to the login page with the server's explanation.
+  const handleAuthFailure = useCallback(
+    (err) => {
+      const status = err.response?.status;
+      if (status !== 401 && status !== 403) return false;
+
+      const message =
+        err.response?.data?.message || 'Your session has ended. Please log in again.';
+      logout();
+      navigate('/coordinator/login', { replace: true, state: { message } });
+      return true;
+    },
+    [logout, navigate]
+  );
+
+  const handleLogout = () => {
+    logout();
+    navigate('/coordinator/login', { replace: true });
+  };
+
   // Load events whenever the search term (debounced) or refresh key changes.
   useEffect(() => {
     let cancelled = false;
@@ -67,6 +91,7 @@ const ManageEvents = () => {
         setLoadError('');
       } catch (err) {
         if (cancelled) return;
+        if (handleAuthFailure(err)) return;
         setEvents([]);
         setLoadError(
           err.response?.data?.message ||
@@ -81,7 +106,7 @@ const ManageEvents = () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [search, refreshKey]);
+  }, [search, refreshKey, handleAuthFailure]);
 
   // Open the add form when arriving from /manage?action=add
   useEffect(() => {
@@ -196,6 +221,7 @@ const ManageEvents = () => {
       setIsEdit(false);
       refresh();
     } catch (err) {
+      if (handleAuthFailure(err)) return;
       setFormError(err.response?.data?.message || 'Failed to save the event. Please try again.');
       setFeedback(null);
     } finally {
@@ -211,6 +237,7 @@ const ManageEvents = () => {
       const res = await getEvent(ev.id);
       setViewEvent(res.data);
     } catch (err) {
+      if (handleAuthFailure(err)) return;
       setViewError(err.response?.data?.message || 'Unable to load this event.');
     } finally {
       setViewLoading(false);
@@ -226,6 +253,7 @@ const ManageEvents = () => {
       setEventToDelete(null);
       refresh();
     } catch (err) {
+      if (handleAuthFailure(err)) return;
       setFeedback({
         type: 'danger',
         text: err.response?.data?.message || 'Failed to delete the event. Please try again.'
@@ -238,17 +266,25 @@ const ManageEvents = () => {
 
   return (
     <div className="container py-4">
-      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div className="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
         <div>
-          <h1 className="h2 mb-1">Manage Events</h1>
+          <h1 className="h2 mb-2">Coordinator Dashboard</h1>
+          <div className="mb-1">
+            <span className="badge text-bg-success fs-6">Approved Coordinator</span>
+          </div>
           <p className="text-muted mb-0">
-            <strong>Faculty view:</strong> add, view, search, update, and delete college events.
+            Signed in as <strong>{coordinator?.full_name}</strong>
+            {coordinator?.designation ? ` · ${coordinator.designation}` : ''} — add, view, search,
+            update, and delete college events.
           </p>
         </div>
-        <div className="d-flex gap-2">
+        <div className="d-flex flex-wrap gap-2">
           <Link to="/events" className="btn btn-outline-info">
-            Student View
+            Browse Events
           </Link>
+          <button type="button" className="btn btn-outline-secondary" onClick={handleLogout}>
+            Logout
+          </button>
           <button id="add-event-button" className="btn btn-primary" onClick={openAddForm}>
             + Add New Event
           </button>

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import eventRoutes from './routes/eventRoutes.js';
+import coordinatorRoutes from './routes/coordinatorRoutes.js';
 import pool from './config/db.js';
 
 dotenv.config();
@@ -32,6 +33,7 @@ app.get('/api/health', async (req, res) => {
 });
 
 app.use('/api/events', eventRoutes);
+app.use('/api/coordinators', coordinatorRoutes);
 
 // Unknown route handler
 app.use((req, res) => {

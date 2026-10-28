@@ -1,16 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
 import { getEvents, getEvent } from '../services/api';
 import { formatDate } from '../utils/formatDate';
 
+const todayString = () => {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+};
+
 /**
- * Read-only event list for students.
- * Students can view all events, search by name, and open event details.
- * Add, edit, and delete controls are intentionally not available here.
+ * Public, read-only event list for students.
+ * Students can view upcoming events, search by name, and open details.
+ * There are intentionally no management controls and no coordinator links here.
  */
 const BrowseEvents = () => {
   const [events, setEvents] = useState([]);
   const [search, setSearch] = useState('');
+  const [includePast, setIncludePast] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -18,6 +25,8 @@ const BrowseEvents = () => {
   const [viewEvent, setViewEvent] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
   const [viewError, setViewError] = useState('');
+
+  const today = useMemo(() => todayString(), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,6 +55,11 @@ const BrowseEvents = () => {
     };
   }, [search, refreshKey]);
 
+  const visibleEvents = useMemo(() => {
+    if (includePast) return events;
+    return events.filter((ev) => String(ev.event_date).slice(0, 10) >= today);
+  }, [events, includePast, today]);
+
   const handleView = async (ev) => {
     setViewEvent(ev);
     setViewError('');
@@ -64,22 +78,18 @@ const BrowseEvents = () => {
     <div className="container py-4">
       <div className="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
         <div>
-          <h1 className="h2 mb-1">
-            Browse Events <span className="badge text-bg-info fs-6 align-middle">Student view</span>
-          </h1>
+          <h1 className="h2 mb-1">Browse Events</h1>
+          <p className="text-primary fw-semibold mb-1">Student view — read-only</p>
           <p className="text-muted mb-0">
-            View and search college events. This page is read-only.
+            View upcoming events and search by name. This page needs no login.
           </p>
         </div>
-        <Link to="/manage" className="btn btn-outline-primary">
-          Faculty: Manage Events
-        </Link>
       </div>
 
       <div className="card shadow-sm">
         <div className="card-header bg-white">
           <div className="row g-2 align-items-center">
-            <div className="col-md-7">
+            <div className="col-md-6">
               <label htmlFor="student-search" className="visually-hidden">
                 Search events
               </label>
@@ -92,23 +102,38 @@ const BrowseEvents = () => {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <div className="col-md-5 d-flex justify-content-md-end gap-2">
-              {search && (
+            <div className="col-md-6">
+              <div className="d-flex flex-wrap justify-content-md-end align-items-center gap-3">
+                <div className="form-check form-switch mb-0">
+                  <input
+                    id="include-past-events"
+                    className="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    checked={includePast}
+                    onChange={(e) => setIncludePast(e.target.checked)}
+                  />
+                  <label className="form-check-label" htmlFor="include-past-events">
+                    Include past events
+                  </label>
+                </div>
+                {search && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setSearch('')}
+                  >
+                    Clear Search
+                  </button>
+                )}
                 <button
                   type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={() => setSearch('')}
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => setRefreshKey((key) => key + 1)}
                 >
-                  Clear Search
+                  Refresh
                 </button>
-              )}
-              <button
-                type="button"
-                className="btn btn-outline-primary"
-                onClick={() => setRefreshKey((key) => key + 1)}
-              >
-                Refresh
-              </button>
+              </div>
             </div>
           </div>
         </div>
@@ -141,18 +166,20 @@ const BrowseEvents = () => {
                   </tr>
                 )}
 
-                {!loading && !error && events.length === 0 && (
+                {!loading && !error && visibleEvents.length === 0 && (
                   <tr>
                     <td colSpan="5" className="text-center text-muted py-4">
                       {search
-                        ? `No events found for "${search}". Try a different event name.`
-                        : 'No events are available yet.'}
+                        ? `No ${includePast ? '' : 'upcoming '}events found for "${search}". Try a different event name.`
+                        : includePast
+                          ? 'No events are available yet.'
+                          : 'No upcoming events are scheduled yet. Turn on "Include past events" to see older events.'}
                     </td>
                   </tr>
                 )}
 
                 {!loading &&
-                  events.map((ev) => (
+                  visibleEvents.map((ev) => (
                     <tr key={ev.id}>
                       <td className="fw-semibold">{ev.event_name}</td>
                       <td>{formatDate(ev.event_date)}</td>
@@ -175,15 +202,18 @@ const BrowseEvents = () => {
         </div>
 
         <div className="card-footer bg-white text-muted small">
-          {loading ? 'Loading...' : `${events.length} event${events.length === 1 ? '' : 's'} shown`}
+          {loading
+            ? 'Loading...'
+            : `${visibleEvents.length} ${includePast ? 'event' : 'upcoming event'}${
+                visibleEvents.length === 1 ? '' : 's'
+              } shown`}
           {search ? ` for "${search}"` : ''}
         </div>
       </div>
 
       <div className="alert alert-light border mt-3 mb-0">
-        <strong>Students:</strong> use the search box to find an event by name, then click{' '}
-        <strong>View</strong> to see its date, venue, and organizer. Only faculty can add, update, or
-        delete events.
+        <strong>Students:</strong> search for an event by name, then click <strong>View</strong> to
+        see its date, venue, and organizer. Students cannot add, update, or delete events.
       </div>
 
       {viewEvent && (

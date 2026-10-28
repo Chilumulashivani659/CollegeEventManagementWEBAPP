@@ -1,7 +1,16 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
+  const { isAuthenticated, coordinator, logout, initializing } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/coordinator/login', { replace: true });
+  };
+
   return (
     <nav className="navbar navbar-expand-lg navbar-dark">
       <div className="container">
@@ -28,14 +37,36 @@ const Navbar = () => {
             </li>
             <li className="nav-item">
               <NavLink className="nav-link" to="/events">
-                Browse Events <span className="badge text-bg-info">Students</span>
+                Browse Events
               </NavLink>
             </li>
-            <li className="nav-item">
-              <NavLink className="nav-link" to="/manage">
-                Manage Events <span className="badge text-bg-light text-dark">Faculty</span>
-              </NavLink>
-            </li>
+
+            {/* Coordinator navigation is shown only after an approved login.
+                Students never see a registration or management link here. */}
+            {!initializing && isAuthenticated && (
+              <>
+                <li className="nav-item">
+                  <NavLink className="nav-link" to="/manage">
+                    Coordinator Dashboard{' '}
+                    <span className="badge text-bg-success">Approved</span>
+                  </NavLink>
+                </li>
+                <li className="nav-item d-none d-lg-block">
+                  <span className="navbar-text small text-white-50 ms-lg-2">
+                    {coordinator?.full_name}
+                  </span>
+                </li>
+                <li className="nav-item">
+                  <button
+                    type="button"
+                    className="nav-link btn btn-link"
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </button>
+                </li>
+              </>
+            )}
           </ul>
         </div>
       </div>

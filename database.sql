@@ -28,5 +28,33 @@ CREATE TABLE IF NOT EXISTS events (
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
+-- Event coordinators (Faculty and authorized Student Council Members).
+-- New rows always start as 'pending' and can only manage events after an
+-- administrator approves them with: npm run approve -- <college-email>
+CREATE TABLE IF NOT EXISTS coordinators (
+  id INT NOT NULL AUTO_INCREMENT,
+  full_name VARCHAR(120) NOT NULL,
+  email VARCHAR(160) NOT NULL,
+  designation ENUM('Faculty', 'Student Council Member') NOT NULL,
+  department VARCHAR(120) NOT NULL,
+  employee_id VARCHAR(60) NULL,
+  student_council_id VARCHAR(60) NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  approved_at TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_coordinators_email (email),
+  INDEX idx_coordinators_status (status),
+  CONSTRAINT chk_coordinator_identifier CHECK (
+    (designation = 'Faculty' AND employee_id IS NOT NULL AND student_council_id IS NULL)
+    OR
+    (designation = 'Student Council Member' AND student_council_id IS NOT NULL AND employee_id IS NULL)
+  )
+) ENGINE = InnoDB
+  DEFAULT CHARACTER SET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
 -- Confirm the table structure after running the script:
 -- SHOW CREATE TABLE events;
+-- SHOW CREATE TABLE coordinators;
