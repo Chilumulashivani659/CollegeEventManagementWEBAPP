@@ -4,45 +4,83 @@ A full-stack web application for managing college events such as seminars, works
 programs, technical competitions, and hackathons. Events are stored in MySQL and managed through a
 React + Bootstrap interface that talks to a Node.js + Express REST API.
 
-The application supports the complete CRUD workflow: **Add, View, Search, Update, and Delete**.
+The application is designed around two simple, separate pages:
+
+- **Students** can browse all events, search by event name, and view event details.
+- **Faculty** can add, view, search, update, and delete events.
+
+No login system is included, because authentication is not part of the assignment. The separation
+between the student page and the faculty page is a simple user-interface design, not a security
+boundary. See [Optional Improvements](#optional-improvements-not-implemented) for how real
+permissions could be added later.
 
 ---
 
 ## Table of Contents
 
 1. [Features](#features)
-2. [Technologies Used](#technologies-used)
-3. [Project Structure](#project-structure)
-4. [Prerequisites](#prerequisites)
-5. [Installation](#installation)
-6. [MySQL Database Setup](#mysql-database-setup)
-7. [Environment Variables](#environment-variables)
-8. [Running the Application](#running-the-application)
-9. [Local URLs](#local-urls)
-10. [API Endpoints](#api-endpoints)
-11. [Testing the Five CRUD Operations](#testing-the-five-crud-operations)
-12. [Screenshots](#screenshots)
-13. [GitHub Setup](#github-setup)
-14. [2–3 Minute Demonstration Script](#23-minute-demonstration-script)
-15. [Troubleshooting](#troubleshooting)
+2. [User Roles](#user-roles)
+3. [Technologies Used](#technologies-used)
+4. [Project Structure](#project-structure)
+5. [Prerequisites](#prerequisites)
+6. [Installation](#installation)
+7. [MySQL Database Setup](#mysql-database-setup)
+8. [Environment Variables](#environment-variables)
+9. [Running the Application](#running-the-application)
+10. [Local URLs](#local-urls)
+11. [API Endpoints](#api-endpoints)
+12. [Testing Student and Faculty Workflows](#testing-student-and-faculty-workflows)
+13. [Screenshots](#screenshots)
+14. [GitHub Setup](#github-setup)
+15. [2–3 Minute Demonstration Script](#23-minute-demonstration-script)
+16. [Optional Improvements (Not Implemented)](#optional-improvements-not-implemented)
+17. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Features
 
-- Responsive **Home page** with event statistics and the next five upcoming events
-- **Manage Events** page with a table of all events
+### Student features (read-only page)
+
+- Browse all college events in a responsive table
+- Search by event name with a case-insensitive partial match
+- View complete details for a single event in a modal
+- No Add, Edit, or Delete controls are shown
+
+### Faculty features (management page)
+
 - **Add** a new event with Event Name, Event Date, Venue, and Organizer
-- **View** complete details of a single event in a modal
-- **Search** events by name using a case-insensitive partial match
+- **View** complete details of a single event
+- **Search** events by name
 - **Update** any event and immediately see the saved values
 - **Delete** an event after a confirmation prompt
+
+### Shared application features
+
+- Responsive **Home page** that links to both the student and faculty pages
+- Event statistics and the next five upcoming events
 - Frontend validation with clear inline field errors
 - Server-side validation with appropriate HTTP status codes
 - Success and error alerts for every operation
 - Parameterized SQL queries to prevent SQL injection
 - MySQL persistence with auto-increment IDs and indexes
 - Credentials loaded from environment variables and excluded from Git
+
+---
+
+## User Roles
+
+The project keeps role separation simple, without adding a login system.
+
+| Role | Page | Allowed actions |
+|---|---|---|
+| Student | `/events` | View all events, search, view details |
+| Faculty | `/manage` | Add, view, search, update, delete |
+
+Both pages use the same Express REST API and MySQL database. The student page simply does not
+render any management controls. Because there is no authentication, someone who knows the
+`/manage` URL can open the faculty page. That is intentional for this assignment and is explained
+in [Optional Improvements](#optional-improvements-not-implemented).
 
 ---
 
@@ -79,8 +117,9 @@ CollegeEventManagement/
 │   │   │   ├── Footer.jsx
 │   │   │   └── Navbar.jsx
 │   │   ├── pages/
+│   │   │   ├── BrowseEvents.jsx   # Student view + search (read-only)
 │   │   │   ├── Home.jsx
-│   │   │   └── ManageEvents.jsx
+│   │   │   └── ManageEvents.jsx   # Faculty CRUD page
 │   │   ├── services/
 │   │   │   └── api.js            # Axios API client
 │   │   ├── styles/
@@ -295,7 +334,9 @@ npm.cmd run preview
 | Service | URL |
 |---|---|
 | Frontend (Vite dev server) | http://localhost:5173 |
-| Manage Events page | http://localhost:5173/manage |
+| Home page | http://localhost:5173 |
+| Student page (view and search) | http://localhost:5173/events |
+| Faculty page (full CRUD) | http://localhost:5173/manage |
 | Backend API | http://localhost:5000/api |
 | Health check | http://localhost:5000/api/health |
 
@@ -318,6 +359,10 @@ Base URL: `http://localhost:5000/api`
 | `POST` | `/events` | Add a new event | `201` |
 | `PUT` | `/events/:id` | Update an event | `200` |
 | `DELETE` | `/events/:id` | Delete an event | `200` |
+
+**Role usage:** the student page (`/events`) uses only the `GET` endpoints. The faculty page
+(`/manage`) uses `POST`, `PUT`, and `DELETE` in addition to the `GET` endpoints. The API itself has
+no login check; role separation is implemented in the React interface.
 
 ### Request body for Add/Update
 
@@ -368,46 +413,61 @@ Invoke-RestMethod -Uri "http://localhost:5000/api/events?search=tech" -Method Ge
 
 ---
 
-## Testing the Five CRUD Operations
+## Testing Student and Faculty Workflows
 
-Open http://localhost:5173/manage and follow these steps.
+### Student workflow — View and Search only
 
-### 1. Add
+Open **http://localhost:5173/events**.
+
+1. **View all events:** the table lists every event with its name, date, venue, and organizer.
+2. **Search:** type `tech` in the search box. After a short delay, only events whose names contain
+   "tech" are shown. Search is case-insensitive.
+3. **View details:** click **View** on a row. A modal shows the event name, date, venue, and
+   organizer.
+4. **Confirm read-only access:** the student page shows **no** Add, Edit, or Delete buttons.
+5. Click **Clear Search** to show all events again.
+
+### Faculty workflow — Add, View, Search, Update, Delete
+
+Open **http://localhost:5173/manage**.
+
+#### 1. Add
 
 1. Click **+ Add New Event**.
 2. Enter:
-   - Event Name: `Annual Tech Fest 2026`
-   - Event Date: a future date, e.g. `2026-12-15`
-   - Venue: `Main Auditorium`
-   - Organizer: `Computer Science Department`
+   - Event Name: `Faculty Development Workshop`
+   - Event Date: a future date, e.g. `2027-03-05`
+   - Venue: `Seminar Hall`
+   - Organizer: `Internal Quality Assurance Cell`
 3. Click **Save Event**.
-4. A green message should say **"Annual Tech Fest 2026" was added successfully.**
+4. A green message should say **"Faculty Development Workshop" was added successfully.**
 5. The new row appears in the table with an auto-generated ID.
-6. Optional check: try submitting empty fields or a past date; inline errors should appear.
+6. Optional check: submit empty fields or a past date; inline errors should appear.
 
-### 2. View
+#### 2. View
 
 1. Find the event row.
 2. Click **View**.
 3. A modal shows the ID, event name, date, venue, and organizer.
 4. Click **Close**.
 
-### 3. Search
+#### 3. Search
 
-1. Type `tech` in the search box.
+1. Type `workshop` in the search box.
 2. After a short delay, the table shows only matching events.
 3. Click **Clear Search** to show all events again.
 
-### 4. Update
+#### 4. Update
 
 1. Click **Edit** on the event.
-2. Change the venue to `New Seminar Hall` and the organizer to `Department of CSE`.
+2. Change the name to `Faculty Development Workshop 2027`, the date to `2027-03-06`, the venue to
+   `New Seminar Hall`, and the organizer to `Department of CSE`.
 3. Click **Update Event**.
 4. A green message should say the event was updated successfully.
 5. The table shows the new values.
 6. Optional check: refresh the browser; the values remain because they are stored in MySQL.
 
-### 5. Delete
+#### 5. Delete
 
 1. Click **Delete** on the event.
 2. Confirm the event name in the dialog.
@@ -433,51 +493,53 @@ against the MySQL database.
 
 ![Home page](screenshots/01-home.png)
 
-### Add operation
+### Student — View events
 
-Form filled with event details:
+The student page is read-only: it has no Add, Edit, or Delete controls.
 
-![Add event form filled](screenshots/02-add-form-filled.png)
+![Student view of all events](screenshots/02-student-view-events.png)
 
-Event added successfully and displayed in the table:
-
-![Add event success](screenshots/03-add-success.png)
-
-### View operation
-
-Single event details loaded from `GET /api/events/:id`:
-
-![View event details](screenshots/04-view-event.png)
-
-### Search operation
+### Student — Search
 
 Searching for `tech` shows only the matching event:
 
-![Search result](screenshots/05-search-result.png)
+![Student search result](screenshots/03-student-search.png)
 
-### Update operation
+### Student — View details
+
+Single event details loaded from `GET /api/events/:id`:
+
+![Student view event details](screenshots/04-student-view-details.png)
+
+### Faculty — Add operation
+
+Form filled with event details:
+
+![Faculty add event form](screenshots/05-faculty-add-form.png)
+
+Event added successfully and displayed in the table:
+
+![Faculty add event success](screenshots/06-faculty-add-success.png)
+
+### Faculty — Update operation
 
 Editing the event:
 
-![Update event form](screenshots/06-update-form-filled.png)
+![Faculty update event form](screenshots/07-faculty-update-form.png)
 
 Updated values saved and shown in the table:
 
-![Update event success](screenshots/07-update-success.png)
+![Faculty update event success](screenshots/08-faculty-update-success.png)
 
-### Delete operation
+### Faculty — Delete operation
 
 Delete confirmation:
 
-![Delete confirmation](screenshots/08-delete-confirm.png)
+![Faculty delete confirmation](screenshots/09-faculty-delete-confirm.png)
 
-Event removed; the other event remains:
+Event removed; the other events remain:
 
-![Delete success](screenshots/09-delete-success.png)
-
-### Final table state
-
-![Final event table](screenshots/10-final-table.png)
+![Faculty delete success](screenshots/10-faculty-delete-success.png)
 
 ---
 
@@ -562,55 +624,81 @@ Practice this once before recording.
 ### 0:00–0:20 — Home page
 
 - Open http://localhost:5173.
-- Say: "This is the College Event Management System built with React, Express, and MySQL."
-- Point out the total, upcoming, and past event counts and the upcoming events table.
+- Say: "This is the College Event Management System built with React, Express, and MySQL. It has a
+  read-only page for students and a management page for faculty."
+- Point out the total, upcoming, and past event counts and the two role cards.
 
-### 0:20–0:50 — Add
+### 0:20–0:40 — Student: View and Search
 
-- Click **Manage Events → + Add New Event**.
+- Click **Browse Events** (student page).
+- Say: "Students can view all events and search by name, but cannot add, edit, or delete."
+- Point out that there are no management buttons.
+- Type `tech` in the search box and show the filtered result.
+- Click **View** on the matching event and show the details modal, then close it.
+
+### 0:40–1:10 — Faculty: Add
+
+- Click **Faculty: Manage Events** or open http://localhost:5173/manage.
+- Click **+ Add New Event**.
 - Enter:
-  - Event Name: `Annual Tech Fest 2026`
-  - Date: `2026-12-15`
-  - Venue: `Main Auditorium`
-  - Organizer: `Computer Science Department`
+  - Event Name: `Faculty Development Workshop`
+  - Date: `2027-03-05`
+  - Venue: `Seminar Hall`
+  - Organizer: `Internal Quality Assurance Cell`
 - Click **Save Event**.
 - Say: "The event was saved to MySQL and received an auto-generated ID."
 - Point out the green success message and the new row.
 
-### 0:50–1:05 — View
+### 1:10–1:25 — Faculty: View
 
 - Click **View** on the new row.
 - Say: "This detail view is loaded from the single-event REST API."
 - Close the modal.
 
-### 1:05–1:25 — Search
-
-- Type `tech` in the search box.
-- Say: "Search is case-insensitive, so partial names work."
-- Point out that only the matching event is displayed.
-- Click **Clear Search**.
-
-### 1:25–1:50 — Update
+### 1:25–1:45 — Faculty: Update
 
 - Click **Edit**.
 - Change the venue to `New Seminar Hall` and organizer to `Department of CSE`.
 - Click **Update Event**.
 - Say: "The updated values are saved in MySQL and shown in the table."
 
-### 1:50–2:10 — Delete
+### 1:45–2:05 — Faculty: Delete
 
 - Click **Delete**.
 - Show the confirmation dialog.
 - Click **Confirm Delete**.
 - Say: "The event is removed from the database and disappears from the table."
 
-### 2:10–2:30 — Wrap-up
+### 2:05–2:25 — Wrap-up
 
 - Optionally run the MySQL check:
   ```powershell
   & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p -e "USE college_events; SELECT * FROM events;"
   ```
-- Say: "This demonstrates complete CRUD functionality with React, Express, and MySQL."
+- Say: "Students can view and search events, while faculty can complete the full CRUD workflow with
+  React, Express, and MySQL."
+
+---
+
+## Optional Improvements (Not Implemented)
+
+The current application intentionally stays within the assignment scope. It does **not** include a
+login system, and the separation between student and faculty pages is implemented only in the React
+interface.
+
+A production version could add:
+
+1. **Authentication:** faculty login with hashed passwords (for example bcrypt) and secure sessions
+   or JWT tokens.
+2. **Server-side authorization:** Express middleware that allows only `GET` requests for students
+   and allows `POST`, `PUT`, and `DELETE` only for authenticated faculty.
+3. **Student accounts:** optional registration and login if students need personalised event lists.
+4. **Admin approval:** an administrator role that approves faculty accounts.
+5. **Additional features:** pagination, date filters, calendar view, event capacity, email
+   notifications, or CSV export.
+
+These are deliberately **not included**, because adding them would require a larger authentication
+and authorization design than the problem statement asks for.
 
 ---
 
@@ -688,3 +776,7 @@ This is expected after a fresh database setup. Add an event from the **Manage Ev
 - Passwords are loaded from `backend/.env`, which is excluded from Git.
 - `.env.example` contains placeholders only.
 - `node_modules`, build output, and logs are excluded from version control.
+- **Role separation is UI-level only.** The student page hides management controls, but the API does
+  not enforce authentication because no login system was required. See
+  [Optional Improvements](#optional-improvements-not-implemented) before using this pattern for
+  sensitive data.

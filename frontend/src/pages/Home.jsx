@@ -42,7 +42,9 @@ const Home = () => {
   const upcoming = events
     .filter((ev) => new Date(`${String(ev.event_date).slice(0, 10)}T00:00:00`) >= today)
     .sort((a, b) => String(a.event_date).localeCompare(String(b.event_date)));
-  const past = events.filter((ev) => new Date(`${String(ev.event_date).slice(0, 10)}T00:00:00`) < today);
+  const past = events.filter(
+    (ev) => new Date(`${String(ev.event_date).slice(0, 10)}T00:00:00`) < today
+  );
 
   return (
     <div>
@@ -52,17 +54,16 @@ const Home = () => {
             <div className="col-lg-8">
               <h1 className="display-5 fw-bold">College Event Management System</h1>
               <p className="lead mt-3 mb-0">
-                Manage seminars, workshops, cultural programs, technical competitions, and
-                hackathons in one place. Add, view, search, update, and delete event records
-                stored in MySQL.
+                Students can browse and search college events. Faculty can add, view, search,
+                update, and delete event records stored in MySQL.
               </p>
             </div>
             <div className="col-lg-4 text-lg-end">
-              <Link to="/manage" className="btn btn-light btn-lg me-2 mb-2">
-                Manage Events
+              <Link to="/events" className="btn btn-light btn-lg me-2 mb-2">
+                Browse Events
               </Link>
-              <Link to="/manage?action=add" className="btn btn-outline-light btn-lg mb-2">
-                Add New Event
+              <Link to="/manage" className="btn btn-outline-light btn-lg mb-2">
+                Faculty: Manage Events
               </Link>
             </div>
           </div>
@@ -84,7 +85,9 @@ const Home = () => {
               <div className="card text-center h-100 stat-card">
                 <div className="card-body">
                   <h5 className="card-title text-muted">Upcoming Events</h5>
-                  <p className="display-6 fw-bold mb-0 text-success">{loading ? '—' : upcoming.length}</p>
+                  <p className="display-6 fw-bold mb-0 text-success">
+                    {loading ? '—' : upcoming.length}
+                  </p>
                 </div>
               </div>
             </div>
@@ -92,7 +95,44 @@ const Home = () => {
               <div className="card text-center h-100 stat-card">
                 <div className="card-body">
                   <h5 className="card-title text-muted">Past Events</h5>
-                  <p className="display-6 fw-bold mb-0 text-secondary">{loading ? '—' : past.length}</p>
+                  <p className="display-6 fw-bold mb-0 text-secondary">
+                    {loading ? '—' : past.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="pb-4">
+        <div className="container">
+          <div className="row g-3">
+            <div className="col-md-6">
+              <div className="card h-100 border-start border-info border-4">
+                <div className="card-body">
+                  <h2 className="h5">For Students</h2>
+                  <p>
+                    Browse all college events, search by event name, and view complete details
+                    including date, venue, and organizer.
+                  </p>
+                  <Link to="/events" className="btn btn-info">
+                    Browse &amp; Search Events
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="card h-100 border-start border-primary border-4">
+                <div className="card-body">
+                  <h2 className="h5">For Faculty</h2>
+                  <p>
+                    Add new events, view and search existing events, update event details, and
+                    delete events that are no longer required.
+                  </p>
+                  <Link to="/manage" className="btn btn-primary">
+                    Manage Events
+                  </Link>
                 </div>
               </div>
             </div>
@@ -105,7 +145,7 @@ const Home = () => {
           <div className="card shadow-sm">
             <div className="card-header bg-white d-flex justify-content-between align-items-center">
               <h2 className="h4 mb-0">Upcoming Events</h2>
-              <Link to="/manage" className="btn btn-sm btn-outline-primary">
+              <Link to="/events" className="btn btn-sm btn-outline-primary">
                 View all events
               </Link>
             </div>
@@ -132,8 +172,8 @@ const Home = () => {
 
               {!loading && !error && upcoming.length === 0 && (
                 <p className="text-muted p-3 mb-0">
-                  No upcoming events yet. Use{' '}
-                  <Link to="/manage?action=add">Add New Event</Link> to create one.
+                  No upcoming events yet. Faculty can add one from the{' '}
+                  <Link to="/manage?action=add">Manage Events</Link> page.
                 </p>
               )}
 
@@ -168,32 +208,10 @@ const Home = () => {
 
       <section className="pb-4">
         <div className="container">
-          <h2 className="h4 mb-3">Features</h2>
-          <div className="row g-3">
-            <div className="col-md-4">
-              <div className="card h-100">
-                <div className="card-body">
-                  <h5>Add &amp; Manage</h5>
-                  <p className="mb-0">Create, update, and delete event records with validation.</p>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="card h-100">
-                <div className="card-body">
-                  <h5>Search</h5>
-                  <p className="mb-0">Find events by name using a case-insensitive partial search.</p>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="card h-100">
-                <div className="card-body">
-                  <h5>MySQL Storage</h5>
-                  <p className="mb-0">All records are stored persistently in a MySQL database.</p>
-                </div>
-              </div>
-            </div>
+          <div className="alert alert-secondary mb-0">
+            <strong>Simple role-based pages:</strong> the student page is read-only, while the
+            faculty page provides the full Add, View, Search, Update, and Delete workflow. No login
+            is required, as authentication is outside the scope of this assignment.
           </div>
         </div>
       </section>

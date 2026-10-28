@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   getEvents,
   getEvent,
@@ -241,11 +241,18 @@ const ManageEvents = () => {
       <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
           <h1 className="h2 mb-1">Manage Events</h1>
-          <p className="text-muted mb-0">Add, view, search, update, and delete college events.</p>
+          <p className="text-muted mb-0">
+            <strong>Faculty view:</strong> add, view, search, update, and delete college events.
+          </p>
         </div>
-        <button id="add-event-button" className="btn btn-primary" onClick={openAddForm}>
-          + Add New Event
-        </button>
+        <div className="d-flex gap-2">
+          <Link to="/events" className="btn btn-outline-info">
+            Student View
+          </Link>
+          <button id="add-event-button" className="btn btn-primary" onClick={openAddForm}>
+            + Add New Event
+          </button>
+        </div>
       </div>
 
       {feedback && (
