@@ -22,7 +22,7 @@ const ProtectedRoute = ({ children }) => {
         replace
         state={{
           from: location.pathname,
-          message: 'Please log in with an approved coordinator account to manage events.'
+          message: 'Please log in with an active coordinator account to manage events.'
         }}
       />
     );

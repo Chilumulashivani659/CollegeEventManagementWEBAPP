@@ -58,8 +58,8 @@ const ManageEvents = () => {
 
   const refresh = () => setRefreshKey((key) => key + 1);
 
-  // If the token expires or approval is revoked, clear the session and return
-  // to the login page with the server's explanation.
+  // If the token expires or coordinator access is revoked, clear the session
+  // and return to the login page with the server's explanation.
   const handleAuthFailure = useCallback(
     (err) => {
       const status = err.response?.status;
@@ -270,7 +270,7 @@ const ManageEvents = () => {
         <div>
           <h1 className="h2 mb-2">Coordinator Dashboard</h1>
           <div className="mb-1">
-            <span className="badge text-bg-success fs-6">Approved Coordinator</span>
+            <span className="badge text-bg-success fs-6">Event Coordinator</span>
           </div>
           <p className="text-muted mb-0">
             Signed in as <strong>{coordinator?.full_name}</strong>

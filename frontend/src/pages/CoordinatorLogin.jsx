@@ -10,7 +10,6 @@ const CoordinatorLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [pending, setPending] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const infoMessage = location.state?.message;
@@ -23,7 +22,6 @@ const CoordinatorLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setPending(false);
 
     if (!email.trim() || !password) {
       setError('Please enter your college email and password.');
@@ -40,7 +38,6 @@ const CoordinatorLogin = () => {
         data?.message ||
           'Unable to log in. Please check that the backend is running and try again.'
       );
-      setPending(data?.code === 'COORDINATOR_PENDING');
     } finally {
       setSubmitting(false);
     }
@@ -56,7 +53,8 @@ const CoordinatorLogin = () => {
             </Link>
             <h1 className="h2 mt-2 mb-1">Coordinator Login</h1>
             <p className="text-muted mb-0">
-              Log in with an approved Faculty or Student Council Member account to manage events.
+              Log in with your registered Faculty or Student Council Member account to manage
+              events.
             </p>
           </div>
 
@@ -69,17 +67,8 @@ const CoordinatorLogin = () => {
           <div className="card shadow-sm">
             <div className="card-body p-4">
               {error && (
-                <div
-                  className={`alert ${pending ? 'alert-warning' : 'alert-danger'}`}
-                  role="alert"
-                >
+                <div className="alert alert-danger" role="alert">
                   {error}
-                  {pending && (
-                    <div className="small mt-2">
-                      You can use the registration form to check the email address you
-                      registered with. Approval is handled by the event administrator.
-                    </div>
-                  )}
                 </div>
               )}
 

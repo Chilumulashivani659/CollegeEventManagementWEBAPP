@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { registerCoordinator } from '../services/api';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 /_-]{1,59}$/;
+const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 ._/-]{1,59}$/;
 
 const emptyForm = {
   full_name: '',
@@ -141,18 +141,18 @@ const CoordinatorRegister = () => {
             <div className="card shadow-sm" id="registration-success">
               <div className="card-body p-4 p-lg-5 text-center">
                 <div className="display-5 mb-2" aria-hidden="true">✅</div>
-                <h1 className="h3">Registration submitted</h1>
+                <h1 className="h3">Registration successful</h1>
                 <p className="text-muted mb-3">{success.message}</p>
                 <p className="mb-4">
-                  <span className="badge text-bg-warning">Pending approval</span>
+                  <span className="badge text-bg-success">Active coordinator</span>
                   <br />
                   <span className="text-muted small">
                     Your college email: <strong>{success.coordinator.email}</strong>
                   </span>
                 </p>
-                <div className="alert alert-info text-start mb-4">
-                  An administrator must approve your account before you can log in and manage
-                  events. Please try logging in only after you have been approved.
+                <div className="alert alert-success text-start mb-4">
+                  Your account was created as an active Event Coordinator. No approval step is
+                  needed. Log in now to add, update, and delete events.
                 </div>
                 <div className="d-flex flex-column flex-sm-row justify-content-center gap-2">
                   <Link to="/coordinator/login" className="btn btn-primary btn-lg">
@@ -180,14 +180,16 @@ const CoordinatorRegister = () => {
             </Link>
             <h1 className="h2 mt-2 mb-1">Coordinator Registration</h1>
             <p className="text-muted mb-0">
-              Only Faculty members and authorized Student Council Members may register. New
-              accounts stay pending until an administrator approves them.
+              Registration is limited to Faculty members and Student Council Members who are
+              already on the college&apos;s authorized coordinator list.
             </p>
           </div>
 
-          <div className="alert alert-warning" role="note">
-            <strong>Approval required:</strong> registering does not log you in. You can manage
-            events only after your account is approved.
+          <div className="alert alert-info" role="note">
+            <strong>Use the details on file:</strong> your full name, college email, designation,
+            department, and employee/Student Council ID must match the college&apos;s authorized
+            record. A successful match creates an active account immediately, with no approval
+            step.
           </div>
 
           <div className="card shadow-sm">

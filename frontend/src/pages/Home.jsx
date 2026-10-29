@@ -99,20 +99,20 @@ const Home = () => {
                     Event Coordinators
                   </h2>
                   <p className="mb-2">
-                    Coordinate college events from planning to completion. Approved coordinators
-                    can add events, view and search them, update details, and remove events that
-                    are no longer required.
+                    Coordinate college events from planning to completion. Active coordinators can
+                    add events, view and search them, update details, and remove events that are no
+                    longer required.
                   </p>
                   <p className="text-muted mb-3">
-                    Registration is limited to Faculty members and authorized Student Council
-                    Members. New accounts remain <strong>pending</strong> until approved by the
-                    event administrator, and only approved coordinators can manage events.
+                    Registration is limited to Faculty members and Student Council Members already
+                    on the college&apos;s authorized coordinator list. A matching registration
+                    creates an active account immediately &mdash; there is no approval step.
                   </p>
 
                   {coordinator && (
                     <div className="alert alert-success py-2 mb-0" role="status">
                       Signed in as <strong>{coordinator.full_name}</strong> ({coordinator.designation}).
-                      Your coordinator account is approved.
+                      Your coordinator account is active.
                     </div>
                   )}
                 </div>

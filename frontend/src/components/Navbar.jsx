@@ -41,14 +41,14 @@ const Navbar = () => {
               </NavLink>
             </li>
 
-            {/* Coordinator navigation is shown only after an approved login.
+            {/* Coordinator navigation is shown only after an active login.
                 Students never see a registration or management link here. */}
             {!initializing && isAuthenticated && (
               <>
                 <li className="nav-item">
                   <NavLink className="nav-link" to="/manage">
                     Coordinator Dashboard{' '}
-                    <span className="badge text-bg-success">Approved</span>
+                    <span className="badge text-bg-success">Active</span>
                   </NavLink>
                 </li>
                 <li className="nav-item d-none d-lg-block">

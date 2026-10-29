@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "approve": "node scripts/approve-coordinator.js"
+    "authorize": "node scripts/authorize-coordinator.js",
+    "test:flow": "node scripts/test-preauthorized-flow.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

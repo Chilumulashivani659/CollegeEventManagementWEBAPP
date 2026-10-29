@@ -1,21 +1,34 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import * as coordinatorService from '../services/coordinatorService.js';
+import * as authorizedCoordinatorService from '../services/authorizedCoordinatorService.js';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 /_-]{1,59}$/;
+const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 ._/-]{1,59}$/;
 const BCRYPT_ROUNDS = 12;
 const MAX_PASSWORD_LENGTH = 72; // bcrypt only uses the first 72 bytes
 const DESIGNATIONS = ['Faculty', 'Student Council Member'];
 
 const text = (value) => (typeof value === 'string' ? value.trim() : '');
+const normalized = (value) => text(value).replace(/\s+/g, ' ').toLowerCase();
 
 const isPlainObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
+const SCHEMA_ERROR_CODES = new Set([
+  'ER_BAD_FIELD_ERROR',
+  'ER_NO_SUCH_TABLE',
+  'ER_BAD_TABLE_ERROR'
+]);
+
 const serverError = (res, message, err) => {
-  console.error(`${message}:`, err.message);
+  console.error(`${message}:`, err);
   return res.status(500).json({ message });
+};
+
+const publicCoordinator = (coordinator) => {
+  const { authorization_active, password_hash, ...rest } = coordinator;
+  return rest;
 };
 
 /**
@@ -89,33 +102,108 @@ const validateRegistration = (body) => {
   };
 };
 
+/**
+ * The submitted identity must match the pre-stored authorization record.
+ * Name and department are compared case-insensitively with whitespace
+ * normalized; IDs are also case-insensitive.
+ */
+const matchesAuthorization = (submitted, authorization) => {
+  if (submitted.designation !== authorization.designation) return false;
+
+  if (normalized(submitted.full_name) !== normalized(authorization.full_name)) return false;
+  if (normalized(submitted.department) !== normalized(authorization.department)) return false;
+
+  if (submitted.designation === 'Faculty') {
+    return normalized(submitted.employee_id) === normalized(authorization.employee_id);
+  }
+
+  return (
+    normalized(submitted.student_council_id) ===
+    normalized(authorization.student_council_id)
+  );
+};
+
 // POST /api/coordinators/register
 export const registerCoordinator = async (req, res) => {
   try {
     const { error, value } = validateRegistration(req.body);
     if (error) return res.status(400).json({ message: error });
 
-    const existing = await coordinatorService.findByEmail(value.email);
-    if (existing) {
+    const authorization = await authorizedCoordinatorService.findByEmail(value.email);
+
+    if (!authorization) {
+      return res.status(403).json({
+        code: 'NOT_AUTHORIZED',
+        message:
+          'This college email is not on the authorized coordinator list. Ask the college administrator to add you before registering.'
+      });
+    }
+
+    if (!authorization.is_active) {
+      return res.status(403).json({
+        code: 'AUTHORIZATION_INACTIVE',
+        message: 'This coordinator authorization is inactive. Contact the college administrator.'
+      });
+    }
+
+    if (authorization.registered_at) {
       return res.status(409).json({
-        message: 'An account with this college email already exists.'
+        code: 'ALREADY_REGISTERED',
+        message: 'A coordinator account is already registered for this college email.'
+      });
+    }
+
+    if (!matchesAuthorization(value, authorization)) {
+      return res.status(403).json({
+        code: 'DETAILS_MISMATCH',
+        message:
+          'Your details do not match the authorized coordinator record. Check your full name, designation, department, and employee/Student Council ID.'
+      });
+    }
+
+    const existingAccount = await coordinatorService.findByEmail(value.email);
+    if (existingAccount) {
+      return res.status(409).json({
+        code: 'ALREADY_REGISTERED',
+        message: 'A coordinator account is already registered for this college email.'
       });
     }
 
     const password_hash = await bcrypt.hash(value.password, BCRYPT_ROUNDS);
-    const coordinator = await coordinatorService.createCoordinator({ ...value, password_hash });
+    const created = await coordinatorService.createFromAuthorization({
+      authorizationId: authorization.id,
+      password_hash
+    });
 
     return res.status(201).json({
       message:
-        'Registration submitted successfully. Your account is pending approval by the event administrator.',
-      coordinator
+        'Registration successful. Your event coordinator account is active, and you can now log in.',
+      coordinator: publicCoordinator(created)
     });
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
+    if (err.code === 'ER_DUP_ENTRY' || err.code === 'ALREADY_REGISTERED') {
       return res.status(409).json({
-        message: 'An account with this college email already exists.'
+        code: 'ALREADY_REGISTERED',
+        message: 'A coordinator account is already registered for this college email.'
       });
     }
+
+    if (err.code === 'AUTHORIZATION_NOT_FOUND' || err.code === 'AUTHORIZATION_INACTIVE') {
+      return res.status(403).json({
+        code: 'NOT_AUTHORIZED',
+        message: 'This coordinator authorization is not active. Contact the college administrator.'
+      });
+    }
+
+    if (SCHEMA_ERROR_CODES.has(err.code)) {
+      console.error('Coordinator registration schema mismatch:', err.message);
+      return res.status(503).json({
+        code: 'SCHEMA_OUT_OF_DATE',
+        message:
+          'Coordinator registration is temporarily unavailable because the database schema is out of date. Apply database.sql, restart the backend, and try again.'
+      });
+    }
+
     return serverError(res, 'Failed to register coordinator', err);
   }
 };
@@ -140,13 +228,11 @@ export const loginCoordinator = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
-    if (account.status !== 'approved') {
+    if (account.status !== 'active' || !account.authorization_active) {
       return res.status(403).json({
-        code: account.status === 'pending' ? 'COORDINATOR_PENDING' : 'COORDINATOR_NOT_APPROVED',
+        code: 'COORDINATOR_INACTIVE',
         message:
-          account.status === 'pending'
-            ? 'Your coordinator account is pending approval. You can log in only after an administrator approves it.'
-            : 'Your coordinator account was not approved. Please contact the event administrator.'
+          'This coordinator account is not active. Contact the college administrator for access.'
       });
     }
 
@@ -162,19 +248,17 @@ export const loginCoordinator = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h', algorithm: 'HS256' }
     );
 
-    const { password_hash, ...coordinator } = account;
-
     return res.json({
       message: 'Login successful.',
       token,
-      coordinator
+      coordinator: publicCoordinator(account)
     });
   } catch (err) {
     return serverError(res, 'Failed to log in', err);
   }
 };
 
-// GET /api/coordinators/me - requires an approved coordinator token
+// GET /api/coordinators/me - requires an active coordinator token
 export const getCurrentCoordinator = (req, res) => {
   res.json({ coordinator: req.coordinator });
 };

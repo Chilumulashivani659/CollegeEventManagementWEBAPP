@@ -3,10 +3,11 @@ import * as coordinatorService from '../services/coordinatorService.js';
 
 /**
  * Every protected request verifies the JWT *and* re-reads the coordinator
- * from MySQL. This means approval can be revoked immediately, and a token
- * cannot keep management access alive on its own.
+ * account plus its pre-authorization record from MySQL. Access can therefore
+ * be revoked immediately, and a token cannot keep management access alive on
+ * its own.
  */
-export const requireApprovedCoordinator = async (req, res, next) => {
+export const requireActiveCoordinator = async (req, res, next) => {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     console.error('JWT_SECRET is not configured.');
@@ -18,7 +19,7 @@ export const requireApprovedCoordinator = async (req, res, next) => {
 
   if (scheme !== 'Bearer' || !token) {
     return res.status(401).json({
-      message: 'Authentication required. Please log in as an approved coordinator.'
+      message: 'Authentication required. Please log in as an event coordinator.'
     });
   }
 
@@ -33,6 +34,10 @@ export const requireApprovedCoordinator = async (req, res, next) => {
     return res.status(401).json({ message });
   }
 
+  if (payload.role !== 'coordinator') {
+    return res.status(401).json({ message: 'Invalid session. Please log in again.' });
+  }
+
   try {
     const coordinator = await coordinatorService.findById(payload.sub);
 
@@ -42,20 +47,19 @@ export const requireApprovedCoordinator = async (req, res, next) => {
       });
     }
 
-    if (coordinator.status !== 'approved') {
+    if (coordinator.status !== 'active' || !coordinator.authorization_active) {
       return res.status(403).json({
         message:
-          coordinator.status === 'rejected'
-            ? 'Your coordinator account was not approved, so event management is not allowed.'
-            : 'Your coordinator account is pending approval. Event management is not allowed yet.'
+          'Your coordinator access is not active. Contact the college administrator if you believe this is a mistake.'
       });
     }
 
-    req.coordinator = coordinator;
+    const { authorization_active, ...publicCoordinator } = coordinator;
+    req.coordinator = publicCoordinator;
     return next();
   } catch (err) {
     return next(err);
   }
 };
 
-export default requireApprovedCoordinator;
+export default requireActiveCoordinator;

@@ -7,7 +7,7 @@ import {
   updateEvent,
   deleteEvent
 } from '../controllers/eventController.js';
-import { requireApprovedCoordinator } from '../middleware/authMiddleware.js';
+import { requireActiveCoordinator } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -17,9 +17,9 @@ router.get('/search', searchEvents);
 router.get('/', getEvents);
 router.get('/:id', getEvent);
 
-// Management operations require a valid token for an approved coordinator.
-router.post('/', requireApprovedCoordinator, createEvent);
-router.put('/:id', requireApprovedCoordinator, updateEvent);
-router.delete('/:id', requireApprovedCoordinator, deleteEvent);
+// Management operations require a valid token for an active coordinator.
+router.post('/', requireActiveCoordinator, createEvent);
+router.put('/:id', requireActiveCoordinator, updateEvent);
+router.delete('/:id', requireActiveCoordinator, deleteEvent);
 
 export default router;
