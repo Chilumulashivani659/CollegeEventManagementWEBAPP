@@ -16,7 +16,7 @@ coordinators can manage event records.
 
 ### Event coordinators
 
--   Register as Faculty or Student Council Member.
+-   Register as Faculty or Student Council Members.
 -   Wait for administrator approval before logging in.
 -   Access a protected dashboard after approval.
 -   Add, view, search, update, and delete events.
@@ -24,8 +24,6 @@ coordinators can manage event records.
 
 ### Security
 
--   Passwords are stored as bcrypt hashes, not plain text.
--   Coordinator sessions use JSON Web Tokens (JWT).
 -   The backend checks the coordinator's current approval status on
     protected requests.
 -   Public event-reading routes are separate from protected
@@ -39,11 +37,10 @@ coordinators can manage event records.
   -----------------------------------------------------------------------
   Layer                               Technologies
   ----------------------------------- -----------------------------------
-  Frontend                            React, JavaScript (JSX), Bootstrap,
-                                      React Router, Axios, Vite
+  Frontend                            React, JavaScript, Bootstrap,
+                                      React Router, Vite
 
-  Backend                             Node.js, Express, mysql2, dotenv,
-                                      cors, bcryptjs, jsonwebtoken
+  Backend                             Node.js, Express, mysql, jsonwebtoken
 
   Database                            MySQL
 
